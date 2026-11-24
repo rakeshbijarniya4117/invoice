@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Invoice Generator</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font:14px system-ui,"Segoe UI",Arial,sans-serif;background:#e9ebef;color:#1c1f26}
+.app{display:grid;grid-template-columns:400px 1fr;height:100vh}
+#panel{overflow:auto;background:#fff;border-right:1px solid #d5d8de;padding:12px}
+main{display:flex;flex-direction:column;min-width:0}
+.bar{padding:8px 12px;background:#fff;border-bottom:1px solid #d5d8de;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.bar b{font-size:12px;color:#555;margin-right:2px}
+button{font:inherit;font-size:13px;padding:6px 11px;border:1px solid #b9bfca;background:#f4f5f8;border-radius:6px;cursor:pointer}
+button.p{background:#1f4fd8;border-color:#1f4fd8;color:#fff;font-weight:600}
+button:hover{filter:brightness(.95)}
+.sep{width:1px;height:22px;background:#d5d8de;margin:0 4px}
+#wrap{flex:1;overflow:auto;padding:10px}
+#wrapIn{position:relative}
+#scaler{transform-origin:top left;width:1000px}
+details{border:1px solid #dde0e6;border-radius:8px;margin-bottom:8px}
+summary{padding:9px 12px;font-weight:600;cursor:pointer;background:#f6f7f9;border-radius:8px}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px}
+.g label,.r2 label{display:flex;flex-direction:column;font-size:11.5px;color:#555;gap:3px}
+.g .full{grid-column:1/-1}
+input,select,textarea{font:inherit;font-size:13px;padding:6px 7px;border:1px solid #c5cad3;border-radius:5px;width:100%;color:#111;background:#fff}
+input[type=color]{padding:1px;height:32px}
+input[type=checkbox]{width:auto}
+textarea{min-height:58px;resize:vertical}
+.it{border:1px solid #e1e4ea;border-radius:7px;margin:8px 10px;padding:8px;background:#fafbfc}
+.r1{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.r2{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.x{padding:4px 9px;color:#b00020}
+.add{margin:0 10px 10px}
+#pdfSize{width:auto;padding:5px}
+@media(max-width:900px){.app{grid-template-columns:1fr;height:auto}}
+@media print{
+ body{background:#fff}.app{display:block;height:auto}#panel,.bar{display:none}
+ #wrap{overflow:visible;padding:0}#scaler{transform:none!important}#wrapIn{height:auto!important}
+ @page{size:A4 landscape;margin:5mm}
+}
+</style>
+<style id="sheetCss">
+.sheet{width:1000px;border:var(--ob) solid var(--line);background:var(--paper);color:var(--c);font:400 var(--fs)/20px var(--ff);position:relative}
+.sheet *{box-sizing:border-box;margin:0}
+.sheet .top{position:relative;height:118px}
+.sheet .tl{position:absolute;left:20px;top:12px}
+.sheet .shop{font:700 var(--shop)/22px Cambria,"Times New Roman",serif;letter-spacing:.4px}
+.sheet .addr{margin-top:2px;line-height:22px;color:var(--lt)}
+.sheet .tr{position:absolute;left:52.7%;top:6px;line-height:21px;color:var(--lt);font-size:calc(var(--fs)*1.08)}
+.sheet .tr .pn{line-height:22px;white-space:nowrap}
+.sheet .tr .pl{font-weight:700;font-size:13.5px;color:var(--c)}
+.sheet .tr .pv{font-weight:700;font-size:var(--pname);color:var(--c)}
+.sheet .tr i{font-style:normal;color:var(--c)}
+.sheet .mid{display:grid;grid-template-columns:36.9% 27.5% 35.6%;height:56px;border-top:var(--lw) solid var(--line)}
+.sheet .mid .a{border-right:var(--lw) solid var(--line);padding:5px 0 0 22px;line-height:22px;color:var(--lt)}
+.sheet .mid .a i{font-style:normal;color:var(--c)}
+.sheet .mid .b{border-right:var(--lw) solid var(--line);display:flex;align-items:center;justify-content:center;padding-top:8px;font:700 var(--title)/1 var(--ff)}
+.sheet .mid .c{padding-left:16px}
+.sheet .mid .c div+div{margin-top:8px}
+.sheet table{border-collapse:collapse;width:100%;table-layout:fixed}
+.sheet th{height:23px;border-top:var(--lw) solid var(--line);border-bottom:var(--lw) solid var(--line);padding:0 4px;text-align:left;font:700 calc(var(--fs)*.95)/21px var(--ff);white-space:nowrap;overflow:hidden}
+.sheet th.m{text-align:center}
+.sheet td{height:19.7px;line-height:19.7px;padding:0 4px;white-space:nowrap;overflow:hidden}
+.sheet th+th,.sheet td+td{border-left:var(--lw) solid var(--line)}
+.sheet .n{text-align:right}
+.sheet tr.ret td:nth-child(2){font:italic 700 var(--ret)/19.7px var(--ff);overflow:visible}
+.sheet .bot{display:grid;grid-template-columns:72.4% 27.6%;border-top:var(--lw) solid var(--line)}
+.sheet .bl{position:relative;height:208px;border-right:var(--lw) solid var(--line)}
+.sheet .gst{height:22px;line-height:22px;padding-left:15px;border-bottom:var(--lw) solid var(--line);white-space:nowrap;overflow:hidden}
+.sheet .abs{position:absolute;white-space:nowrap;line-height:20px}
+.sheet .terms{line-height:19.5px}
+.sheet .terms u{display:block;font-weight:700;line-height:22px;margin-bottom:2px}
+.sheet .stampTxt{font:italic 700 var(--stampfs)/26px Georgia,"Times New Roman",serif;color:var(--stamp);transform:rotate(-3deg);transform-origin:left center;letter-spacing:.3px}
+.sheet .prop{font:700 17px Georgia,serif;color:var(--stamp);transform:rotate(-8deg);transform-origin:left center}
+.sheet .stampImg{max-height:110px;max-width:260px;display:block}
+.sheet .br{position:relative}
+.sheet .br .r{position:absolute;left:25px;right:8px;display:flex;justify-content:space-between}
+.sheet .br .s{font:700 var(--sub)/20px var(--ff)}
+.sheet .gt{position:absolute;left:0;right:0;bottom:0;height:28px;border-top:var(--lw) solid var(--line);display:flex;justify-content:space-between;align-items:center;padding:0 8px 0 12px;font:700 var(--grand)/1 var(--ff)}
+</style>
+</head>
+<body>
+<div class="app">
+ <aside id="panel"></aside>
+ <main>
+  <div class="bar">
+   <b>Download as:</b>
+   <button class="p" data-dl="pdf">PDF</button>
+   <select id="pdfSize" title="PDF page size"><option value="a4|l">A4 landscape</option><option value="a4|p">A4 portrait</option><option value="a5|l">A5 landscape</option><option value="a3|l">A3 landscape</option><option value="letter|l">Letter landscape</option></select>
+   <button data-dl="png">PNG</button><button data-dl="jpg">JPG</button><button data-dl="webp">WEBP</button>
+   <button data-dl="docx">Word</button><button data-dl="pptx">PowerPoint</button><button data-dl="xlsx">Excel</button>
+   <button data-dl="csv">CSV</button><button data-dl="html">HTML</button><button data-dl="txt">TXT</button><button data-dl="json">JSON backup</button>
+   <span class="sep"></span>
+   <button id="prt">Print</button><button id="cpy">Copy image</button><button id="shr">Share</button>
+   <button id="imp">Import JSON</button><input type="file" id="impf" accept=".json" hidden>
+   <button id="reset">Reset</button>
+  </div>
+  <div id="wrap"><div id="wrapIn"><div id="scaler"><div id="sheet" class="sheet"></div></div></div></div>
+ </main>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const nl=s=>esc(s).replace(/\n/g,'<br>');
+const f2=v=>{const n=parseFloat(v);return v===''||isNaN(n)?esc(v):n.toFixed(2)};
+const it=(n,p,h,b,e,q,m,r)=>({n,p,h,b,e,q,m,r,sg:'0.00',cg:'0.00',a:''});
+const DEF={
+ f:{shop:'DIVOJ PHARMACY',addr:'1-E-30 SUKHARIA NAGAR\nSRI GANGANAGAR RAJASTHAN (335001)',phone:'Phone: 7014734855',gstin:'08JJSPS1104K1ZN',dl:'116814-116815',
+  pname:'KALPANA KUMARI',paddr:'',pmob:'',doc:'DR.UPSANA SETIA',invno:'I000209',date:'11/11/2026',title:'INVOICE',
+  terms:'Item without Batch No. & Expiry will not taken back.\nAll disputes subject to SRIGANGANAGAR jurisdicton only.\nE.& O.E.',
+  remark:'',stampText:'For Divoj Pharmacy',proprietor:'Proprietor',forText:'For DIVOJ PHARMACY',signText:'Authorised Signatory',wordsOv:'',stampImg:'',
+  discount:'22',gstline:'',showGst:true},
+ st:{font:'Arial, Helvetica, sans-serif',size:11.5,shop:16,title:21,pname:16,ret:20,stampfs:22,sub:14.5,grand:18,tableH:313,lw:1,ob:2,color:'#2b2b2f',lt:'#62646b',line:'#33343a',paper:'#f4f5f7',stamp:'#2e3f9c'},
+ pos:{termsX:15,termsY:29,stampX:270,stampY:103,propX:383,propY:173,forX:538,forY:102,signX:559,signY:172,remX:15,remY:139,wordsX:15,wordsY:181},
+ L:{pname:'Patient Name :',paddr:'Patient Address :',pmob:'Patient Mobile :',doc:'Doctor Name :',gstin:'GSTIN :',dl:'D.L.NO :',invno:'Invoice No. :',date:'Date',ret:'SALES RETURN',sub:'SUB TOTAL',disc:'Discount',round:'Roundoff',grand:'GRAND TOTAL',terms:'Terms & Conditions',remark:'Remark :',rs:'Rs.',only:'only'},
+ h:['SN.','PRODUCT NAME','PACK','HSN','BATCH','EXP.','QTY','MRP','RATE','SGST','CGST','AMOUNT'],
+ sales:[it('BETD','1','3004','A2700425','3/28','1','25.08','25.08'),it('2CC DISPOVAN','2 ML','3004','610040NE2','2/31','1','6.40','6.40'),
+  it('ULTRAFERIN LP','15TAB','3004','FTHF-1015','4/27','2:0','190.00','190.00'),it('CALKON ZM','15 TAB','3004','LTA-S26518A','2/28','2:0','84.38','84.38'),
+  it('FOLIM FORTE OD','10 TAB','3004','YT185A','3/27','3:0','130.00','130.00'),it('CHOPE SR 400','10 TAB','3004','05260054','2/28','3:0','884.81','884.81'),
+  it('MYMIPRO KESAR','200 GM','2106','SP260305','8/27','1','402.25','402.25')],
+ returns:[it('GESTEROL SR 300','10 TAB','3004','26S2HTA057','12/27','3:0','590.60','590.60'),it('TRAPIC 650','10 TAB','3004','SIG2606A','11/27','1:0','438.00','438.00'),
+  it('MULTIFAR SYRUP','200 ML','3004','LLD-11096C','11/27','1','195.00','195.00')]
+};
+const KEY='divojInvoiceGen2',clone=o=>JSON.parse(JSON.stringify(o));
+function merge(s){const d=clone(DEF);for(const k in d){if(s[k]!==undefined)d[k]=Array.isArray(d[k])?s[k]:(typeof d[k]==='object'?Object.assign(d[k],s[k]):s[k])}return d}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));return s?merge(s):clone(DEF)}catch(e){return clone(DEF)}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+let S=load();
+
+const FONTS=['Arial, Helvetica, sans-serif','Tahoma, Geneva, sans-serif','Verdana, Geneva, sans-serif','"Segoe UI", Calibri, sans-serif','Georgia, serif','"Times New Roman", Times, serif','"Courier New", monospace'];
+const num=(g,k,l)=>[g,k,l,'number'];
+const FIELDS=[
+ ['Pharmacy details',[['f','shop','Pharmacy name'],['f','addr','Address','ta'],['f','phone','Phone'],['f','gstin','GSTIN'],['f','dl','D.L. No.']]],
+ ['Patient & invoice',[['f','pname','Patient name'],['f','paddr','Patient address'],['f','pmob','Patient mobile'],['f','doc','Doctor name'],['f','invno','Invoice no.'],['f','date','Date'],['f','title','Title']]],
+ 'ITEMS',
+ ['Footer',[['f','terms','Terms & conditions','ta'],['f','remark','Remark'],['f','stampText','Stamp text'],['f','proprietor','Proprietor text'],['f','forText','"For" text'],['f','signText','Signatory text'],['f','wordsOv','Amount in words (blank = auto)']]],
+ ['Totals',[num('f','discount','Discount'),['f','showGst','Show GST line','check'],['f','gstline','GST line (blank = auto)','ta']]],
+ ['Fonts, sizes & colours',[['st','font','Font','sel'],num('st','size','Table text size'),num('st','shop','Pharmacy name size'),num('st','title','Title size'),num('st','pname','Patient name size'),num('st','ret','Sales return size'),num('st','stampfs','Stamp size'),num('st','sub','Sub total size'),num('st','grand','Grand total size'),num('st','tableH','Item area height'),num('st','lw','Line thickness'),num('st','ob','Outer border'),['st','color','Text colour','color'],['st','lt','Light text colour','color'],['st','line','Line colour','color'],['st','paper','Paper colour','color'],['st','stamp','Stamp colour','color']]],
+ ['Footer positions (px)',Object.keys(DEF.pos).map(k=>num('pos',k,k.replace('X',' X').replace('Y',' Y')))],
+ ['Labels',Object.keys(DEF.L).map(k=>['L',k,k,'text'])],
+ ['Table column headings',DEF.h.map((x,i)=>['h',i,'Column '+(i+1),'text'])]
+];
+const IK=[['p','Pack'],['h','HSN'],['b','Batch'],['e','Exp'],['q','Qty'],['m','MRP'],['r','Rate'],['sg','SGST'],['cg','CGST'],['a','Amount (auto)']];
+function fieldHTML([g,k,label,type]){
+ const v=g==='h'?S.h[k]:S[g][k],a=`data-g="${g}" data-k="${k}"`;let el;
+ if(type==='ta')el=`<textarea ${a}>${esc(v)}</textarea>`;
+ else if(type==='sel')el=`<select ${a}>${FONTS.map(x=>`<option value='${esc(x)}' ${x===v?'selected':''}>${esc(x.split(',')[0].replace(/"/g,''))}</option>`).join('')}</select>`;
+ else if(type==='check')el=`<input type="checkbox" ${a} ${v?'checked':''}>`;
+ else el=`<input type="${type||'text'}" ${type==='number'?'step="any"':''} ${a} value="${esc(v)}">`;
+ return `<label class="${type==='ta'||k==='wordsOv'?'full':''}">${esc(label)}${el}</label>`;
+}
+const itemHTML=(l,o,i)=>`<div class="it"><div class="r1"><span>${i+1}.</span><input data-l="${l}" data-i="${i}" data-k="n" value="${esc(o.n)}" placeholder="Product name"><button class="x" data-del="${l}:${i}">✕</button></div><div class="r2">${IK.map(([k,p])=>`<label>${p}<input data-l="${l}" data-i="${i}" data-k="${k}" value="${esc(o[k])}"></label>`).join('')}</div></div>`;
+const itemsBlock=(l,t,o)=>`<details ${o?'open':''}><summary>${t}</summary><div id="lst-${l}">${S[l].map((x,i)=>itemHTML(l,x,i)).join('')}</div><button class="add" data-add="${l}">+ Add row</button></details>`;
+function buildPanel(){
+ let h='';
+ FIELDS.forEach((s,i)=>{
+  if(s==='ITEMS'){h+=itemsBlock('sales','Items (sales)',true)+itemsBlock('returns','Sales return items',false);return}
+  h+=`<details ${i<2?'open':''}><summary>${s[0]}</summary><div class="g">${s[1].map(fieldHTML).join('')}`;
+  if(s[0]==='Footer')h+=`<label class="full">Stamp / signature image (optional)<input type="file" id="stampFile" accept="image/*"></label><button class="full" id="clrStamp">Remove image</button>`;
+  h+='</div></details>';
+ });
+ $('#panel').innerHTML=h;
+}
+const drawItems=()=>['sales','returns'].forEach(l=>{$('#lst-'+l).innerHTML=S[l].map((o,i)=>itemHTML(l,o,i)).join('')});
+
+/* ---------- calculations ---------- */
+const qn=q=>parseFloat(String(q).split(':')[0])||0;
+const amt=o=>o.a!==''&&!isNaN(parseFloat(o.a))?parseFloat(o.a):qn(o.q)*(parseFloat(o.r)||0);
+function words(n){n=Math.floor(Math.abs(n));if(!n)return'Zero';
+ const a=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'],
+ b=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'],two=x=>x<20?a[x]:b[Math.floor(x/10)]+(x%10?' '+a[x%10]:''),p=[];
+ const cr=Math.floor(n/1e7);n%=1e7;const lk=Math.floor(n/1e5);n%=1e5;const th=Math.floor(n/1e3);n%=1e3;const h=Math.floor(n/100);n%=100;
+ if(cr)p.push(two(cr)+' Crore');if(lk)p.push(two(lk)+' Lakh');if(th)p.push(two(th)+' Thousand');if(h)p.push(a[h]+' Hundred');if(n)p.push(two(n));return p.join(' ')}
+function calc(){
+ const {f,L}=S,salesT=S.sales.reduce((s,o)=>s+amt(o),0),retT=S.returns.reduce((s,o)=>s+amt(o),0),sub=salesT-retT,disc=parseFloat(f.discount)||0,net=sub-disc,grand=Math.round(net);
+ return {salesT,retT,sub,disc,net,grand,rnd:net-grand,
+  gst:f.gstline||`GST ${net.toFixed(2)}*0%=0SGST`+(retT>0?`, S/R=-${retT.toFixed(2)} (Net Amt.=-${retT.toFixed(2)})`:''),
+  wd:f.wordsOv||`${words(grand)} ${L.only}`};
+}
+
+/* ---------- render ---------- */
+const ROW=19.7,HEAD=23;
+function render(){
+ const {f,st,L,h,pos:P}=S,sh=$('#sheet'),c=calc();
+ sh.style.cssText=`--ff:${st.font};--fs:${st.size}px;--shop:${st.shop}px;--title:${st.title}px;--pname:${st.pname}px;--ret:${st.ret}px;--stampfs:${st.stampfs}px;--sub:${st.sub}px;--grand:${st.grand}px;--c:${st.color};--lt:${st.lt};--line:${st.line};--paper:${st.paper};--stamp:${st.stamp};--lw:${st.lw}px;--ob:${st.ob}px`;
+ const row=(o,i)=>`<tr><td>${i+1}.</td><td>${esc(o.n)}</td><td>${esc(o.p)}</td><td>${esc(o.h)}</td><td>${esc(o.b)}</td><td>${esc(o.e)}</td><td class="n">${esc(o.q)}</td><td class="n">${f2(o.m)}</td><td class="n">${f2(o.r)}</td><td class="n">${f2(o.sg)}</td><td class="n">${f2(o.cg)}</td><td class="n">${o.a!==''?f2(o.a):amt(o).toFixed(2)}</td></tr>`;
+ const nr=S.sales.length+(S.returns.length?S.returns.length+1:0),fh=Math.max(0,st.tableH-HEAD-nr*ROW);
+ const retHead=S.returns.length?`<tr class="ret"><td></td><td>${esc(L.ret)}</td>${'<td></td>'.repeat(10)}</tr>`:'';
+ const at=(x,y,cls,inner)=>`<div class="abs ${cls}" style="left:${x}px;top:${y}px">${inner}</div>`;
+ const stamp=f.stampImg?`<img class="stampImg" src="${f.stampImg}">`:`<div class="stampTxt">${esc(f.stampText)}</div>`;
+ const widths=[3.86,26.17,6.89,6.2,8.95,6.2,6.2,8.26,10.33,4.55,4.41,7.99];
+ sh.innerHTML=`
+ <div class="top">
+  <div class="tl"><div class="shop">${esc(f.shop)}</div><div class="addr">${nl(f.addr)}<br>${esc(f.phone)}</div></div>
+  <div class="tr"><div class="pn"><span class="pl">${esc(L.pname)}</span> <span class="pv">${esc(f.pname)}</span></div><div>${esc(L.paddr)} <i>${esc(f.paddr)}</i></div><div>${esc(L.pmob)} <i>${esc(f.pmob)}</i></div><div>${esc(L.doc)} <i>${esc(f.doc)}</i></div></div>
+ </div>
+ <div class="mid">
+  <div class="a">${esc(L.gstin)} <i>${esc(f.gstin)}</i><br>${esc(L.dl)} <i>${esc(f.dl)}</i></div>
+  <div class="b">${esc(f.title)}</div>
+  <div class="c"><div>${esc(L.invno)} ${esc(f.invno)}</div><div>${esc(L.date)} &nbsp;&nbsp;&nbsp;&nbsp;${esc(f.date)}</div></div>
+ </div>
+ <table><colgroup>${widths.map(w=>`<col style="width:${w}%">`).join('')}</colgroup>
+  <thead><tr>${h.map((x,i)=>`<th class="${i==7||i==8?'m':''}">${esc(x)}</th>`).join('')}</tr></thead>
+  <tbody>${S.sales.map(row).join('')}${retHead}${S.returns.map(row).join('')}<tr>${`<td style="height:${fh}px;line-height:1;padding:0"></td>`.repeat(12)}</tr></tbody></table>
+ <div class="bot">
+  <div class="bl">
+   <div class="gst">${f.showGst?esc(c.gst):''}</div>
+   ${at(P.termsX,P.termsY,'terms',`<u>${esc(L.terms)}</u>${nl(f.terms)}`)}
+   ${at(P.stampX,P.stampY,'',stamp)}
+   ${at(P.propX,P.propY,'prop',esc(f.proprietor))}
+   ${at(P.forX,P.forY,'',esc(f.forText))}
+   ${at(P.signX,P.signY,'',esc(f.signText))}
+   ${at(P.remX,P.remY,'',`${esc(L.remark)} ${esc(f.remark)}`)}
+   ${at(P.wordsX,P.wordsY,'',`${esc(L.rs)} ${esc(c.wd)}`)}
+  </div>
+  <div class="br">
+   <div class="r s" style="top:16px"><span>${esc(L.sub)}</span><span>${c.sub.toFixed(2)}</span></div>
+   <div class="r" style="top:36px"><span>${esc(L.disc)}</span><span>${c.disc.toFixed(2)}</span></div>
+   <div class="r" style="top:55px"><span>${esc(L.round)}</span><span>${c.rnd.toFixed(2)}</span></div>
+   <div class="gt"><span>${esc(L.grand)}</span><span>${c.grand.toFixed(2)}</span></div>
+  </div>
+ </div>`;
+ fit();
+}
+function fit(){
+ const sh=$('#sheet'),s=Math.min(1,($('#wrap').clientWidth-24)/1000);
+ $('#scaler').style.transform=`scale(${s})`;$('#wrapIn').style.height=(sh.offsetHeight*s)+'px';
+}
+addEventListener('resize',fit);
+
+/* ---------- events ---------- */
+document.addEventListener('input',e=>{
+ const t=e.target,d=t.dataset,v=t.type==='checkbox'?t.checked:t.value;
+ if(d.l)S[d.l][d.i][d.k]=v;
+ else if(d.g==='h')S.h[d.k]=v;
+ else if(d.g&&t.type==='number'&&(d.g==='st'||d.g==='pos')){if(v==='')return;S[d.g][d.k]=+v}
+ else if(d.g)S[d.g][d.k]=v;
+ else return;
+ render();save();
+});
+document.addEventListener('change',e=>{
+ const t=e.target;
+ if(t.id==='stampFile'&&t.files[0]){const r=new FileReader();r.onload=()=>{S.f.stampImg=r.result;render();save()};r.readAsDataURL(t.files[0])}
+ if(t.id==='impf'&&t.files[0]){const r=new FileReader();r.onload=()=>{try{S=merge(JSON.parse(r.result));buildPanel();render();save()}catch(x){alert('Invalid JSON file')}};r.readAsText(t.files[0]);t.value=''}
+});
+document.addEventListener('click',e=>{
+ const t=e.target.closest('button')||e.target,d=t.dataset;
+ if(d.add){S[d.add].push(it('','','','','','','',''));drawItems();render();save()}
+ if(d.del){const [l,i]=d.del.split(':');S[l].splice(+i,1);drawItems();render();save()}
+ if(d.dl)dl(d.dl);
+ if(t.id==='clrStamp'){S.f.stampImg='';render();save()}
+ if(t.id==='reset'&&confirm('Reset everything to the original sample?')){try{localStorage.removeItem(KEY)}catch(x){}S=clone(DEF);buildPanel();render()}
+ if(t.id==='prt')print();
+ if(t.id==='imp')$('#impf').click();
+ if(t.id==='cpy')copyImg();
+ if(t.id==='shr')share();
+});
+
+/* ---------- export ---------- */
+const LIBS={h2c:'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',pdf:'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',docx:'https://cdn.jsdelivr.net/npm/docx@7.1.0/build/index.js',pptx:'https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js',xl:'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js'};
+const loaded={};
+const lib=k=>loaded[k]||(loaded[k]=new Promise((ok,no)=>{const s=document.createElement('script');s.src=LIBS[k];s.onload=ok;s.onerror=()=>{delete loaded[k];no(new Error('Could not load a required library. Check your internet connection.'))};document.head.appendChild(s)}));
+const fname=()=>'Invoice-'+(S.f.invno||'new').replace(/[^\w-]+/g,'_');
+const blobOf=(cv,type,q)=>new Promise(r=>cv.toBlob(r,type,q));
+function saveBlob(b,n){const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500)}
+const saveText=(s,n,t)=>saveBlob(new Blob([s],{type:t}),n);
+async function snap(scale){
+ await lib('h2c');
+ const c=$('#sheet').cloneNode(true),box=document.createElement('div');
+ box.style.cssText='position:fixed;left:-99999px;top:0';box.appendChild(c);document.body.appendChild(box);
+ try{return await html2canvas(c,{scale,backgroundColor:S.st.paper,useCORS:true})}finally{box.remove()}
+}
+async function pdfObj(){
+ const cv=await snap(3);await lib('pdf');
+ const [fmt,o]=$('#pdfSize').value.split('|'),pdf=new window.jspdf.jsPDF({orientation:o,unit:'pt',format:fmt});
+ const pw=pdf.internal.pageSize.getWidth(),ph=pdf.internal.pageSize.getHeight(),m=16,r=Math.min((pw-2*m)/cv.width,(ph-2*m)/cv.height);
+ pdf.addImage(cv.toDataURL('image/jpeg',0.97),'JPEG',(pw-cv.width*r)/2,m,cv.width*r,cv.height*r);return pdf;
+}
+const rowsAll=()=>[...S.sales.map((o,i)=>['Sale',i+1,o]),...S.returns.map((o,i)=>['Return',i+1,o])];
+function csv(){
+ const q=v=>'"'+String(v).replace(/"/g,'""')+'"',c=calc(),rows=[['Type',...S.h].map(q).join(',')];
+ rowsAll().forEach(([t,i,o])=>rows.push([t,i,o.n,o.p,o.h,o.b,o.e,o.q,o.m,o.r,o.sg,o.cg,amt(o).toFixed(2)].map(q).join(',')));
+ rows.push('',[S.L.sub,c.sub.toFixed(2)].map(q).join(','),[S.L.disc,c.disc.toFixed(2)].map(q).join(','),[S.L.round,c.rnd.toFixed(2)].map(q).join(','),[S.L.grand,c.grand.toFixed(2)].map(q).join(','));
+ return '\ufeff'+rows.join('\r\n');
+}
+function txt(){
+ const {f,L}=S,c=calc();
+ let s=`${f.shop}\n${f.addr}\n${f.phone}\n${L.gstin} ${f.gstin}   ${L.dl} ${f.dl}\n\n${f.title}   ${L.invno} ${f.invno}   ${L.date} ${f.date}\n${L.pname} ${f.pname}\n${L.doc} ${f.doc}\n${'-'.repeat(60)}\n`;
+ rowsAll().forEach(([t,i,o])=>{s+=`${t==='Return'?'[RETURN] ':''}${i}. ${o.n} | ${o.p} | ${o.b} | ${o.e} | Qty ${o.q} x ${f2(o.r)} = ${amt(o).toFixed(2)}\n`});
+ return s+`${'-'.repeat(60)}\n${L.sub}: ${c.sub.toFixed(2)}\n${L.disc}: ${c.disc.toFixed(2)}\n${L.round}: ${c.rnd.toFixed(2)}\n${L.grand}: ${c.grand.toFixed(2)}\n${L.rs} ${c.wd}\n\n${f.terms}\n${f.forText}\n${f.signText}\n`;
+}
+async function xlsx(n){
+ await lib('xl');const {f,L,h}=S,c=calc(),A=f.addr.split('\n');
+ const wb=new ExcelJS.Workbook(),ws=wb.addWorksheet('Invoice',{pageSetup:{orientation:'landscape',paperSize:9,fitToPage:true,fitToWidth:1,fitToHeight:1}});
+ [5,30,10,9,14,9,8,11,11,8,8,12].forEach((w,i)=>ws.getColumn(i+1).width=w);
+ const t={style:'thin'},bd={top:t,left:t,bottom:t,right:t};
+ const put=(r,a,b,v,o={})=>{if(b>a)ws.mergeCells(r,a,r,b);const x=ws.getCell(r,a);x.value=v;x.font={name:'Arial',size:o.s||10,bold:!!o.b,italic:!!o.i};x.alignment={horizontal:o.a||'left',vertical:'middle'};if(o.n)x.numFmt='0.00';if(o.x)for(let k=a;k<=b;k++)ws.getCell(r,k).border=bd;if(o.fill)x.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE8EAEE'}}};
+ put(1,1,6,f.shop,{b:1,s:15});put(1,7,12,`${L.pname} ${f.pname}`,{b:1,s:12});
+ put(2,1,6,A[0]||'');put(2,7,12,`${L.paddr} ${f.paddr}`);
+ put(3,1,6,A[1]||'');put(3,7,12,`${L.pmob} ${f.pmob}`);
+ put(4,1,6,f.phone);put(4,7,12,`${L.doc} ${f.doc}`);
+ put(5,1,4,`${L.gstin} ${f.gstin}`);put(5,9,12,`${L.invno} ${f.invno}`);
+ put(6,1,4,`${L.dl} ${f.dl}`);put(6,9,12,`${L.date} ${f.date}`);
+ ws.mergeCells(5,5,6,8);const tc=ws.getCell(5,5);tc.value=f.title;tc.font={name:'Arial',size:18,bold:true};tc.alignment={horizontal:'center',vertical:'middle'};
+ let r=7;h.forEach((x,i)=>put(r,i+1,i+1,x,{b:1,x:1,fill:1,a:i>6?'right':'left'}));
+ const line=(o,i)=>{r++;[(i+1)+'.',o.n,o.p,o.h,o.b,o.e,o.q].forEach((v,k)=>put(r,k+1,k+1,v,{x:1,a:k==6?'right':'left'}));[o.m,o.r,o.sg,o.cg].forEach((v,k)=>put(r,k+8,k+8,parseFloat(v)||0,{x:1,n:1,a:'right'}));put(r,12,12,amt(o),{x:1,n:1,a:'right'})};
+ S.sales.forEach(line);
+ if(S.returns.length){r++;put(r,2,2,L.ret,{b:1,i:1,s:12});S.returns.forEach(line)}
+ r++;put(r,1,8,f.showGst?c.gst:'',{s:9});
+ [[L.sub,c.sub,1],[L.disc,c.disc],[L.round,c.rnd],[L.grand,c.grand,1]].forEach(([a,b,bo])=>{r++;put(r,9,11,a,{b:bo,x:1});put(r,12,12,b,{b:bo,x:1,n:1,a:'right'})});
+ r++;put(r,1,8,L.terms,{b:1});f.terms.split('\n').forEach(l=>{r++;put(r,1,8,l,{s:9})});
+ r+=2;put(r,1,8,`${L.rs} ${c.wd}`);put(r,9,12,f.forText,{a:'right'});r++;put(r,9,12,f.signText,{a:'right'});
+ saveBlob(new Blob([await wb.xlsx.writeBuffer()],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),n+'.xlsx');
+}
+async function docxExp(cv,n){
+ await lib('docx');const D=docx,b=new Uint8Array(await(await blobOf(cv,'image/png')).arrayBuffer()),r=Math.min(1030/cv.width,715/cv.height);
+ const doc=new D.Document({sections:[{properties:{page:{size:{orientation:D.PageOrientation.LANDSCAPE},margin:{top:500,bottom:500,left:500,right:500}}},children:[new D.Paragraph({alignment:D.AlignmentType.CENTER,children:[new D.ImageRun({data:b,transformation:{width:Math.round(cv.width*r),height:Math.round(cv.height*r)}})]})]}]});
+ saveBlob(await D.Packer.toBlob(doc),n+'.docx');
+}
+async function pptxExp(cv,n){
+ await lib('pptx');const p=new PptxGenJS();p.layout='LAYOUT_WIDE';const s=p.addSlide(),r=Math.min(12.8/cv.width,7.1/cv.height),w=cv.width*r,h=cv.height*r;
+ s.addImage({data:cv.toDataURL('image/png').replace('data:',''),x:(13.33-w)/2,y:(7.5-h)/2,w,h});await p.writeFile({fileName:n+'.pptx'});
+}
+async function dl(t){
+ const n=fname();
+ try{
+  if(t==='json')return saveText(JSON.stringify(S,null,1),n+'.json','application/json');
+  if(t==='csv')return saveText(csv(),n+'.csv','text/csv;charset=utf-8');
+  if(t==='txt')return saveText(txt(),n+'.txt','text/plain;charset=utf-8');
+  if(t==='html')return saveText(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(n)}</title><style>body{margin:0;padding:12px;background:#ddd}${$('#sheetCss').textContent}</style></head><body>${$('#sheet').outerHTML}<\/body></html>`,n+'.html','text/html');
+  if(t==='xlsx')return await xlsx(n);
+  if(t==='pdf')return (await pdfObj()).save(n+'.pdf');
+  const cv=await snap(3);
+  if(t==='png')return saveBlob(await blobOf(cv,'image/png'),n+'.png');
+  if(t==='jpg')return saveBlob(await blobOf(cv,'image/jpeg',.96),n+'.jpg');
+  if(t==='webp')return saveBlob(await blobOf(cv,'image/webp',.95),n+'.webp');
+  if(t==='docx')return await docxExp(cv,n);
+  if(t==='pptx')return await pptxExp(cv,n);
+ }catch(e){alert('Export failed: '+e.message)}
+}
+async function copyImg(){try{const cv=await snap(2);await navigator.clipboard.write([new ClipboardItem({'image/png':await blobOf(cv,'image/png')})]);alert('Invoice image copied')}catch(e){alert('Copy not supported here. Use PNG download instead.')}}
+async function share(){
+ try{const pdf=await pdfObj(),file=new File([pdf.output('blob')],fname()+'.pdf',{type:'application/pdf'});
+  if(navigator.canShare&&navigator.canShare({files:[file]}))await navigator.share({files:[file],title:fname()});else{pdf.save(fname()+'.pdf');alert('Sharing is not supported here, so the PDF was downloaded.')}}
+ catch(e){if(e.name!=='AbortError')alert('Share failed: '+e.message)}
+}
+
+buildPanel();render();
+</script>
+</body>
+</html>
